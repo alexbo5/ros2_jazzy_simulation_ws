@@ -1,0 +1,32 @@
+# ROS2 Build artifacts
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Colcon
+.colcon_install_layout
+
+# Testing
+.pytest_cache/
+*.coverage
+
+# Temporary files
+*.log
+*.tmp

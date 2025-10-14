@@ -1,0 +1,27 @@
+{
+    "name": "ROS 2 Jazzy Dev Container",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": ".."
+    },
+    "workspaceFolder": "/root/ros2_ws",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-iot.vscode-ros",
+                "ms-vscode.cpptools",
+                "ms-python.python"
+            ],
+            "settings": {
+                "terminal.integrated.shell.linux": "/bin/bash"
+            }
+        }
+    },
+    "mounts": [
+        "source=${localWorkspaceFolder},target=/root/ros2_ws,type=bind"
+    ],
+    "runArgs": [
+        "--network=host"
+    ],
+    "remoteUser": "root"
+}
