@@ -7,6 +7,7 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     ros-jazzy-robotiq-description \
     ros-jazzy-ros-gz-sim \
     ros-jazzy-ros-gz-bridge \
+    ros-jazzy-gz-ros2-control \
     ros-jazzy-robot-state-publisher \
     ros-jazzy-controller-manager \
     ros-jazzy-joint-state-broadcaster \
