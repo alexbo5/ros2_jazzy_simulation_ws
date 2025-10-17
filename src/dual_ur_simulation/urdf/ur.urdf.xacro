@@ -14,6 +14,8 @@
    <xacro:arg name="safety_k_position" default="20"/>
    <xacro:arg name="simulation_controllers" default="" />
    <xacro:arg name="ros_namespace" default="" />
+   <xacro:arg name="origin_xyz" default="0 0 0"/>
+   <xacro:arg name="origin_rpy" default="0 0 0"/>
    
    <!-- UR Macro einbinden -->
    <xacro:include filename="$(find ur_description)/urdf/ur_macro.xacro"/>
@@ -37,7 +39,7 @@
      safety_pos_margin="$(arg safety_pos_margin)"
      safety_k_position="$(arg safety_k_position)"
      force_abs_paths="true">
-     <origin xyz="0 0 0" rpy="0 0 0" />
+     <origin xyz="$(arg origin_xyz)" rpy="$(arg origin_rpy)" />
    </xacro:ur_robot>
    
    <!-- Gazebo Plugin -->

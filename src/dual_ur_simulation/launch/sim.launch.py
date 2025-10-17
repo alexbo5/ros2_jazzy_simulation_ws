@@ -11,8 +11,18 @@ def generate_launch_description():
     
     # Roboter-Konfigurationen
     robots = [
-        {'name': 'ur3e_1', 'type': 'ur3e', 'x': '-0.5', 'y': '0.0'},
-        {'name': 'ur3e_2', 'type': 'ur3e', 'x': '0.5', 'y': '0.0'},
+        {
+            'name': 'ur3e_1', 
+            'type': 'ur3e', 
+            'origin_xyz': '0.0 0.0 0.0',
+            'origin_rpy': '0 0 0'
+        },
+        {
+            'name': 'ur3e_2', 
+            'type': 'ur3e', 
+            'origin_xyz': '0.25 0.25 0.0',
+            'origin_rpy': '0 0 3.14'
+        },
     ]
     
     # Package-Pfade
@@ -71,8 +81,8 @@ def generate_launch_description():
     for robot in robots:
         robot_name = robot['name']
         ur_type = robot['type']
-        robot_x = robot['x']
-        robot_y = robot['y']
+        origin_xyz = robot['origin_xyz']
+        origin_rpy = robot['origin_rpy']
         
         # Robot State Publisher
         robot_state_publisher = Node(
@@ -87,6 +97,8 @@ def generate_launch_description():
                     'name:=', robot_name, ' ',
                     'ur_type:=', ur_type, ' ',
                     'tf_prefix:=', robot_name, '/', ' ',
+                    'origin_xyz:="', origin_xyz, '" ',
+                    'origin_rpy:="', origin_rpy, '" ',
                     'simulation_controllers:=', controllers_config, ' ',
                     'ros_namespace:=', robot_name
                 ])
@@ -94,17 +106,14 @@ def generate_launch_description():
             output='screen'
         )
 
-        # Spawn Entity
+        # Spawn Entity - ohne explizite Position/Orientierung (Standard ist 0 0 0)
         spawn_entity = Node(
             package='ros_gz_sim',
             executable='create',
             name=f'spawn_{robot_name}',
             arguments=[
                 '-name', robot_name,
-                '-topic', f'/{robot_name}/robot_description',
-                '-x', robot_x,
-                '-y', robot_y,
-                '-z', '0.0'
+                '-topic', f'/{robot_name}/robot_description'
             ],
             output='screen'
         )
