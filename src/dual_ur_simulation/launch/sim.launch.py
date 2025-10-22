@@ -20,7 +20,7 @@ def generate_launch_description():
         {
             'name': 'ur3e_2', 
             'type': 'ur3e', 
-            'origin_xyz': '0.25 0.25 0.0',
+            'origin_xyz': '2.0 0.0 0.0',
             'origin_rpy': '0 0 3.14'
         },
     ]

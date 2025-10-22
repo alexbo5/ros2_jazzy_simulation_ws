@@ -1,9 +1,9 @@
 FROM osrf/ros:jazzy-desktop-full
 
 RUN apt-get update && apt-get upgrade -y && apt-get install -y \
-    ros-jazzy-ur-description \
-    ros-jazzy-ur-simulation-gz \
-    ros-jazzy-ur-controllers \
+    ros-jazzy-ros2-control \
+    ros-jazzy-ros2-controllers \
+    ros-jazzy-ur \
     ros-jazzy-robotiq-description \
     ros-jazzy-ros-gz-sim \
     ros-jazzy-ros-gz-bridge \
