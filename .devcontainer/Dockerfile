@@ -4,7 +4,6 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     ros-jazzy-ros2-control \
     ros-jazzy-ros2-controllers \
     ros-jazzy-ur \
-    ros-jazzy-robotiq-description \
     ros-jazzy-ros-gz-sim \
     ros-jazzy-ros-gz-bridge \
     ros-jazzy-gz-ros2-control \
@@ -12,8 +11,10 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     ros-jazzy-controller-manager \
     ros-jazzy-joint-state-broadcaster \
     ros-jazzy-joint-trajectory-controller \
+    ros-jazzy-moveit* \
     git \
     python3-rosdep \
+    python3-scipy \
     python3-colcon-common-extensions \
     && rm -rf /var/lib/apt/lists/*
 
