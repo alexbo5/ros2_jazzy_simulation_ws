@@ -20,8 +20,8 @@ def generate_launch_description():
         {
             'name': 'ur3e_2', 
             'type': 'ur3e', 
-            'origin_xyz': '2.0 0.0 0.0',
-            'origin_rpy': '0 0 3.14'
+            'origin_xyz': '-0.770 0.655 0.0',
+            'origin_rpy': '0 0 0'
         },
     ]
     
@@ -40,7 +40,7 @@ def generate_launch_description():
         'controllers.yaml'
     ])
 
-    # Gazebo Simulation starten
+    # Gazebo Simulation mit Bullet-Featherstone Physics Engine starten
     gz_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
             PathJoinSubstitution([
@@ -49,7 +49,9 @@ def generate_launch_description():
                 'gz_sim.launch.py'
             ])
         ]),
-        launch_arguments={'gz_args': '-r empty.sdf'}.items()
+        launch_arguments={
+            'gz_args': '-r empty.sdf --physics-engine gz-physics-bullet-featherstone-plugin'
+        }.items()
     )
 
     gz_sim_bridge = Node(
@@ -72,8 +74,6 @@ def generate_launch_description():
             'rviz',
             'dual_ur.rviz'
         ])],
-        # Falls keine Config existiert, starte ohne Argument
-        # arguments=[]
     )
 
     # Nodes für jeden Roboter erstellen
@@ -106,7 +106,7 @@ def generate_launch_description():
             output='screen'
         )
 
-        # Spawn Entity - ohne explizite Position/Orientierung (Standard ist 0 0 0)
+        # Spawn Entity
         spawn_entity = Node(
             package='ros_gz_sim',
             executable='create',
@@ -153,12 +153,36 @@ def generate_launch_description():
             )
         )
 
+
+        # Greifer Controller spawnen (verzögert nach Trajectory Controller)
+        delay_gripper_controller = RegisterEventHandler(
+            event_handler=OnProcessExit(
+                target_action=joint_state_broadcaster,
+                on_exit=[
+                    Node(
+                        package='controller_manager',
+                        executable='spawner',
+                        name=f'gripper_controller_spawner_{robot_name}',
+                        arguments=[
+                            'robotiq_gripper_controller',
+                            '--controller-manager', 
+                            f'/{robot_name}/controller_manager',
+                            '--param-file', controllers_config,
+                        ],
+                        output='screen'
+                    )
+                ]
+            )
+        )
+
+
         # Gruppiere Nodes pro Roboter
         robot_group = GroupAction([
             robot_state_publisher,
             spawn_entity,
             joint_state_broadcaster,
-            delay_joint_trajectory_controller
+            delay_joint_trajectory_controller,
+            delay_gripper_controller  # Greifer Controller hinzugefügt
         ])
         
         robot_nodes.append(robot_group)

@@ -45,17 +45,22 @@
      <origin xyz="$(arg origin_xyz)" rpy="$(arg origin_rpy)" />
    </xacro:ur_robot>
 
-   <xacro:ur_to_robotiq 
-     prefix="$(arg tf_prefix)"
-     connected_to="$(arg tf_prefix)tool0"/>
+   <xacro:ur_to_robotiq
+      prefix="$(arg tf_prefix)"
+      parent="$(arg tf_prefix)tool0"
+      child="$(arg tf_prefix)gripper_mount_link"
+      rotation="0" 
+   />
 
    <xacro:robotiq_gripper
      name="$(arg tf_prefix)RobotiqGripperHardwareInterface"
      prefix="$(arg tf_prefix)"
      parent="$(arg tf_prefix)gripper_mount_link"
-     use_fake_hardware="false"
      sim_gazebo="true"
-     include_ros2_control="false">
+     use_fake_hardware="true"
+     com_port="/dev/ttyUSB0"
+     include_ros2_control="true"
+     gripper_closed_position="0.0">
      <origin xyz="0 0 0" rpy="0 0 0"/>
    </xacro:robotiq_gripper>
    
