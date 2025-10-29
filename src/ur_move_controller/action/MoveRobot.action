@@ -1,0 +1,16 @@
+# Goal
+string robot_namespace
+string movement_type         # "moveJ" oder "moveL"
+string reference_frame       # "world", "base_link", "ur3e_1/base_link", "ur3e_2/base_link"
+float64[3] position         # [x, y, z] in Metern
+float64[3] orientation      # [rx, ry, rz] in Radiant
+float64 velocity            # Geschwindigkeit in mm/s
+---
+# Result
+bool success
+string message
+float64 time
+---
+# Feedback
+string status
+float64 progress
