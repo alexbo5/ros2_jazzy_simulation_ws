@@ -27,7 +27,8 @@
         "--env", "QT_QPA_PLATFORM=xcb",
         "--volume", "/tmp/.X11-unix:/tmp/.X11-unix:rw",
         "--env", "LIBGL_ALWAYS_SOFTWARE=1",
-        "--env", "QT_XCB_FORCE_SOFTWARE_OPENGL=1"
+        "--env", "QT_XCB_FORCE_SOFTWARE_OPENGL=1",
+        "--device=/dev/video0:/dev/video0"
     ],
     "remoteUser": "root"
 }

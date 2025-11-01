@@ -16,7 +16,12 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     python3-rosdep \
     python3-scipy \
     python3-colcon-common-extensions \
+    python3-pip \
+    ca-certificates \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install --no-cache-dir --break-system-packages kociemba
 
 # Separater Build-Workspace (wird nicht gemountet)
 #WORKDIR /root/build_ws
