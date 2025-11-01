@@ -28,6 +28,7 @@ except Exception as e:
 # Wir verwenden hier keinen konkreten Typ, machen nur ein optionales Client-Call-Pattern.
 
 FACE_ORDER = ["U", "R", "F", "D", "L", "B"]
+CAPTURE_ORDER = ["U", "F", "D", "R", "B", "L"]
 # Farbgrenzen (HSV)
 COLOR_RANGES = {
     "white": ((0, 0, 180), (180, 60, 255)),
@@ -89,6 +90,10 @@ def classify_color(hsv_value: np.ndarray) -> str:
 class SolveCubeActionServer(Node):
     def __init__(self):
         super().__init__("solve_cube_action_server")
+        # declare parameter to enable preview window with grid
+        self.declare_parameter("show_preview", True)
+        self.preview_window = "Cube Preview"
+
         self._action_server = ActionServer(
             self,
             SolveCube,
@@ -105,6 +110,9 @@ class SolveCubeActionServer(Node):
         self.get_logger().info("Goal erhalten: Starte Erfassung aller Seiten...")
         feedback_msg = SolveCube.Feedback()
         result = SolveCube.Result()
+
+        # read parameter for preview display (can change between goals)
+        show_preview = bool(self.get_parameter("show_preview").value)
 
         # Parameter aus Goal lesen
         camera_index = 0
@@ -123,6 +131,15 @@ class SolveCubeActionServer(Node):
             goal_handle.abort()
             return result
 
+        # If preview requested, prepare window
+        if show_preview:
+            try:
+                cv2.namedWindow(self.preview_window, cv2.WINDOW_NORMAL)
+            except Exception:
+                # some environments may not support GUI; log and disable preview
+                self.get_logger().warn("Preview window konnte nicht erstellt werden. Deaktiviere Preview.")
+                show_preview = False
+
         captured_faces = {}  # face -> list[str] 9 Farben
         color_to_face = {}   # center_color -> face
 
@@ -130,7 +147,7 @@ class SolveCubeActionServer(Node):
         faces_captured = 0
 
         try:
-            for face in FACE_ORDER:
+            for face in CAPTURE_ORDER:
                 # 1) Feedback: wir starten diese Seite
                 feedback_msg.current_face = face
                 feedback_msg.faces_captured = faces_captured
@@ -146,23 +163,45 @@ class SolveCubeActionServer(Node):
                 #   self.drive_client.wait_for_server(timeout_sec=2.0)
                 #   send_goal_future = self.drive_client.send_goal_async(drive_goal)
                 #   ...
-                # Wir implementieren hier: warte kurz und fahre dann weiter.
-                # Wichtig: Nicht blockierend lange warten in einem Action-Server (hier kurz und robust).
-                placeholder_wait_s = 1.0
-                self.get_logger().info(f"(Platzhalter) Warte {placeholder_wait_s}s, damit Roboter sich dreht.")
-                time.sleep(placeholder_wait_s)
+                # Wir implementieren hier ein kurzes Initial-Warten, dann Polling der Kamera,
+                # bis alle 9 Facelets erkannt sind (keine 'unknown' mehr) oder bis Timeout.
+                time.sleep(5)  # kurze Wartezeit, damit der Roboter sich bewegen kann
 
-                # 2) Erfasse die Seite per Kamera (mitteln über mehrere Frames)
-                feedback_msg.status = f"Erfasse Seite {face} per Kamera..."
-                goal_handle.publish_feedback(feedback_msg)
-                colors = self.capture_face_colors(cap, sample_frames=6)
-                if colors is None or len(colors) != 9:
-                    msg = f"Fehler beim Erfassen der Seite {face}."
+                # Versuche wiederholt, die Seite zu erfassen, bis alle Facelets erkannt sind
+                max_wait_s = 20.0
+                start_t = time.time()
+                captured_ok = False
+                colors = None
+                while time.time() - start_t < max_wait_s:
+                    # Allow client to cancel
+                    if goal_handle.is_cancel_requested:
+                        msg = "Goal vom Client abgebrochen."
+                        self.get_logger().info(msg)
+                        result.success = False
+                        result.message = msg
+                        goal_handle.canceled()
+                        return result
+
+                    feedback_msg.status = f"Erfasse Seite {face} per Kamera..."
+                    goal_handle.publish_feedback(feedback_msg)
+
+                    # sample_frames kleiner während polling, da wir ggf. mehrfach versuchen
+                    colors = self.capture_face_colors(cap, sample_frames=4, show_preview=show_preview)
+                    if colors and len(colors) == 9 and all(c != "unknown" for c in colors):
+                        captured_ok = True
+                        break
+
+                    # noch nicht vollständig erkannt -> kurz warten und erneut versuchen
+                    self.get_logger().debug(f"Seite {face} noch nicht vollständig erkannt, erneuter Versuch...")
+                    time.sleep(0.5)
+
+                if not captured_ok:
+                    msg = f"Fehler beim Erfassen der Seite {face} innerhalb {max_wait_s}s."
                     self.get_logger().warn(msg)
                     # wir fahren trotzdem fort — aber markieren result
                     result.success = False
                     result.message = msg
-                    # optional: abbrechen oder weitermachen? Wir machen weiter, aber merken Fehler.
+                    # optional: continue to next face to gather what we can
                 else:
                     # Center-Farbe der Seite = colors[4]
                     center = colors[4]
@@ -235,17 +274,28 @@ class SolveCubeActionServer(Node):
             feedback_msg.status = "Fertig."
             goal_handle.publish_feedback(feedback_msg)
             # Sende Result und setze Goal auf succeeded (auch bei Fehlern, so dass der Client das Ergebnis lesen kann)
-            goal_handle.succeed()
+            if (result.success):
+                goal_handle.succeed()
+            else:
+                goal_handle.abort()
             return result
 
         finally:
             cap.release()
+            # destroy preview window if used
+            try:
+                if bool(self.get_parameter("show_preview").value):
+                    cv2.destroyAllWindows()
+            except Exception:
+                pass
 
-    def capture_face_colors(self, cap: cv2.VideoCapture, sample_frames: int = 6) -> List[str]:
+    def capture_face_colors(self, cap: cv2.VideoCapture, sample_frames: int = 6, show_preview: bool = False) -> List[str]:
         """
         Erfasse die 9 Facelet-Farben für die aktuell sichtbare Seite.
         Wir nehmen mehrere Frames, extrahieren für jeden Frame die 3x3-Zellen,
         mitteln den HSV und klassifizieren die Farbe.
+
+        Wenn show_preview True, wird ein Fenster mit Kamera-Bild und einer 3x3 Grid-Überlagerung angezeigt.
         """
         collected = []  # wird Liste von lists (frames x 9) sein
         attempts = 0
@@ -284,6 +334,32 @@ class SolveCubeActionServer(Node):
             else:
                 time.sleep(0.05)
 
+            # draw preview overlay if requested
+            if show_preview:
+                try:
+                    overlay = frame.copy()
+                    # draw outer box
+                    cv2.rectangle(overlay, (x0, y0), (x0 + face_size, y0 + face_size), (0, 255, 0), 2)
+                    # draw grid lines
+                    for i in range(1, 3):
+                        # vertical
+                        x = x0 + i * cell
+                        cv2.line(overlay, (x, y0), (x, y0 + face_size), (0, 255, 0), 1)
+                        # horizontal
+                        y = y0 + i * cell
+                        cv2.line(overlay, (x0, y), (x0 + face_size, y), (0, 255, 0), 1)
+                    # draw small centers
+                    for row in range(3):
+                        for col in range(3):
+                            cx = x0 + col * cell + cell // 2
+                            cy = y0 + row * cell + cell // 2
+                            cv2.circle(overlay, (cx, cy), 4, (0, 255, 255), -1)
+                    cv2.imshow(self.preview_window, overlay)
+                    cv2.waitKey(1)
+                except Exception:
+                    # GUI might not be available in the environment; ignore errors
+                    pass
+
         if not collected:
             return None
 
@@ -298,20 +374,6 @@ class SolveCubeActionServer(Node):
             best = max(votes.items(), key=lambda kv: kv[1])[0]
             final.append(best)
         return final
-
-
-# def main(args=None):
-#     rclpy.init(args=args)
-#     try:
-#         server = SolveCubeActionServer()
-#         try:
-#             rclpy.spin(server)
-#         except KeyboardInterrupt:
-#             server.get_logger().info("KeyboardInterrupt, herunterfahren...")
-#         finally:
-#             server.destroy()
-#     finally:
-#         rclpy.shutdown()
 
 
 def main(args=None):
