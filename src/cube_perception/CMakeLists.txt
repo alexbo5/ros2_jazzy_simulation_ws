@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(cube_solver)
+project(cube_perception)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -26,17 +26,17 @@ endif()
 find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
-  "action/SolveCube.action"
+  "action/ScanCube.action"
 )
 
 # Install the Python action server script so ros2 launch can run it by package/executable name.
-# The script lives at src/cube_solver/cube_solver/solve_cube_action_server.py in this workspace.
-# We install it into lib/<package>/solve_cube_action_server (no .py suffix) so your launch file can use
-# executable='solve_cube_action_server'.
+# The script lives at src/cube_perception/cube_perception/scan_cube_action_server.py in this workspace.
+# We install it into lib/<package>/scan_cube_action_server (no .py suffix) so your launch file can use
+# executable='scan_cube_action_server'.
 install(PROGRAMS
-  cube_solver/solve_cube_action_server.py
+  cube_perception/scan_cube_action_server.py
   DESTINATION lib/${PROJECT_NAME}
-  RENAME solve_cube_action_server
+  RENAME scan_cube_action_server
 )
 
 # Install launch files

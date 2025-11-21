@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ROS2 Action Server zur Erfassung aller 6 Rubik-Seiten und Berechnung der Lösung.
-Action: cube_solver.action.SolveCube  (aus action/SolveCube.action)
+Action: cube_perception.action.ScanCube  (aus action/ScanCube.action)
 """
 
 import rclpy
@@ -16,11 +16,11 @@ import time
 from typing import List, Tuple
 
 try:
-    from cube_solver.action import SolveCube
+    from cube_perception.action import ScanCube
 except Exception as e:
     raise RuntimeError(
-        "Konnte Action-Type cube_solver.action.SolveCube nicht importieren. "
-        "Stelle sicher, dass du die Action 'SolveCube.action' im Paket hattest und das Paket gebaut wurde."
+        "Konnte Action-Type cube_perception.action.ScanCube nicht importieren. "
+        "Stelle sicher, dass du die Action 'ScanCube.action' im Paket hattest und das Paket gebaut wurde."
     )
 
 # (Optional) Typ für Drive action des Roboters, als Platzhalter:
@@ -87,20 +87,20 @@ def classify_color(hsv_value: np.ndarray) -> str:
     return "unknown"
 
 
-class SolveCubeActionServer(Node):
+class ScanCubeActionServer(Node):
     def __init__(self):
-        super().__init__("solve_cube_action_server")
+        super().__init__("scan_cube_action_server")
         # declare parameter to enable preview window with grid
         self.declare_parameter("show_preview", True)
         self.preview_window = "Cube Preview"
 
         self._action_server = ActionServer(
             self,
-            SolveCube,
-            'solve_cube',
+            ScanCube,
+            'scan_cube',
             execute_callback=self.execute_callback
         )
-        self.get_logger().info("SolveCube Action Server gestartet.")
+        self.get_logger().info("ScanCube Action Server gestartet.")
         # Optionaler ActionClient-Name/Typ für Fahren (Platzhalter)
         # self.drive_client = ActionClient(self, DriveFace, 'drive_to_face')
         # Wir verwenden keine Typen, nur optionales Warten auf Server.
@@ -108,8 +108,8 @@ class SolveCubeActionServer(Node):
 
     def execute_callback(self, goal_handle):
         self.get_logger().info("Goal erhalten: Starte Erfassung aller Seiten...")
-        feedback_msg = SolveCube.Feedback()
-        result = SolveCube.Result()
+        feedback_msg = ScanCube.Feedback()
+        result = ScanCube.Result()
 
         # read parameter for preview display (can change between goals)
         show_preview = bool(self.get_parameter("show_preview").value)
@@ -381,7 +381,7 @@ def main(args=None):
     rclpy.init(args=args)
     
     try:
-        server = SolveCubeActionServer()
+        server = ScanCubeActionServer()
         executor = MultiThreadedExecutor(num_threads=4)
         executor.add_node(server)
         executor.spin()
