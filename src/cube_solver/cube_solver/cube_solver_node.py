@@ -4,13 +4,13 @@ from rclpy.node import Node
 from rclpy.action import ActionClient
 
 from cube_perception.action import ScanCube
-# todo: from cube_motion_interfaces.action import ExecuteMove
+from cube_motion.action import RotateFace, HandOver
 
 class CubeSolver(Node):
     def __init__(self):
         super().__init__('cube_solver')
         self.perception_client = ActionClient(self, ScanCube, 'scan_cube')
-#        self.motion_client = self.create_client(ExecuteMove, 'execute_cube_move')
+        self.face_rotation_client = ActionClient(self, RotateFace, 'rotate_face')
 
     def run(self):
         self.get_logger().info("Main started...")
@@ -39,7 +39,28 @@ class CubeSolver(Node):
 
         solution = res.result.solution.split()
         for move in solution:
-            # todo: self.motion_client ...
+            if not self.face_rotation_client.wait_for_server(timeout_sec=10.0):
+                self.get_logger().error("Cube motion action server not available")
+                return
+            
+            goal = RotateFace.Goal()
+            goal.move = move
+            send_goal_future = self.face_rotation_client.send_goal_async(goal)
+            # block until send_goal completes
+            rclpy.spin_until_future_complete(self, send_goal_future)
+            goal_handle = send_goal_future.result()
+            if goal_handle is None or not getattr(goal_handle, "accepted", False):
+                self.get_logger().error("Face rotation goal was rejected or no goal handle received")
+                return
+
+            self.get_logger().info("Face rotation goal accepted, waiting for result...")
+            result_future = goal_handle.get_result_async()
+            rclpy.spin_until_future_complete(self, result_future)
+            res = result_future.result()
+            if res is None:
+                self.get_logger().error("Failed to get result from cube motion server")
+                return
+
             self.get_logger().info(move)
 
         self.get_logger().info("Cube solved!")

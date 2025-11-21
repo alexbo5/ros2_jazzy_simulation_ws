@@ -1,0 +1,8 @@
+# Goal:
+int8 cube_robot  # index of the robot to which the cube will be hand over
+---
+# Result
+int8 cube_robot
+bool success
+---
+# Feedback
