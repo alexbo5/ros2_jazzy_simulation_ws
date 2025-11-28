@@ -11,7 +11,16 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     ros-jazzy-controller-manager \
     ros-jazzy-joint-state-broadcaster \
     ros-jazzy-joint-trajectory-controller \
-    ros-jazzy-moveit* \
+    ros-jazzy-moveit-common \
+    ros-jazzy-moveit-core \
+    ros-jazzy-moveit-ros \
+    ros-jazzy-moveit-ros-planning \
+    ros-jazzy-moveit-ros-move-group \
+    ros-jazzy-moveit-planners-ompl \
+    ros-jazzy-moveit-py \
+    ros-jazzy-ur-description \
+    ros-jazzy-ur-moveit-config \
+    ros-jazzy-ur-robot-driver \
     git \
     python3-rosdep \
     python3-scipy \
